@@ -1,1 +1,4 @@
 project_id = "guzayjvdrpzvjkkvbcxq"
+
+[functions.analyze-deck]
+verify_jwt = false

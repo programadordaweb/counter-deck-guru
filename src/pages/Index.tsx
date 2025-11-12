@@ -4,67 +4,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CounterDeckResult } from "@/components/CounterDeckResult";
+import { supabase } from "@/integrations/supabase/client";
+import crownLogo from "@/assets/crown-logo.png";
 
-// Mock data - será substituído pela resposta da IA real
-const mockCounterDeck = {
-  counterName: "Deck Mega Cavaleiro + Bola de Fogo",
-  cards: [
-    {
-      name: "Mega Cavaleiro",
-      icon: "🤺",
-      role: "Tanque Principal",
-      explanation: "Use para absorver dano das tropas inimigas e criar contra-ataques devastadores. Posicione atrás da torre para acumular elixir."
-    },
-    {
-      name: "Bola de Fogo",
-      icon: "🔥",
-      role: "Controle de Área",
-      explanation: "Elimine enxames e tropas médias do oponente. Ideal para resetar cargas e criar vantagem de elixir."
-    },
-    {
-      name: "Valquíria",
-      icon: "⚔️",
-      role: "Defesa Splash",
-      explanation: "Perfeita contra tropas terrestres agrupadas. Use no centro para defender ambas as torres."
-    },
-    {
-      name: "Mega Servos",
-      icon: "🤖",
-      role: "Suporte Aéreo",
-      explanation: "Elimine balões e dragões infernais. Proteja seu Mega Cavaleiro em contra-ataques."
-    },
-    {
-      name: "Tronco",
-      icon: "🪵",
-      role: "Controle Rápido",
-      explanation: "Pare cargas de príncipes e elimine tropas baixas. Use para empurrar unidades inimigas."
-    },
-    {
-      name: "Esqueletos",
-      icon: "💀",
-      role: "Cycle & Distração",
-      explanation: "Carta de 1 elixir para distrair P.E.K.K.A e outras tropas pesadas. Use para acelerar o ciclo."
-    },
-    {
-      name: "Arqueiras",
-      icon: "🏹",
-      role: "Suporte Terrestre",
-      explanation: "Defesa versátil contra tropas aéreas e terrestres. Divida para defender contra cargas."
-    },
-    {
-      name: "Canhão",
-      icon: "⚙️",
-      role: "Defesa de Estruturas",
-      explanation: "Atraia e elimine montarias e tanques. Posicione estrategicamente para puxar tropas ao centro."
-    }
-  ]
-};
+interface EnemyCard {
+  name: string;
+  icon: string;
+}
+
+interface CounterCard {
+  name: string;
+  icon: string;
+  role: string;
+  explanation: string;
+  counters: string[];
+}
+
+interface AnalysisResult {
+  enemyDeck: EnemyCard[];
+  counterDeck: CounterCard[];
+  counterName: string;
+  isAbsoluteCounter: boolean;
+}
 
 const Index = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -79,8 +47,8 @@ const Index = () => {
     }
   };
 
-  const handleAnalyze = () => {
-    if (!selectedImage) {
+  const handleAnalyze = async () => {
+    if (!selectedImage || !imagePreview) {
       toast.error("Envie uma imagem do deck primeiro!");
       return;
     }
@@ -88,18 +56,40 @@ const Index = () => {
     setIsAnalyzing(true);
     toast.info("Analisando deck inimigo... 🔍");
     
-    // Simular análise - será substituído pela integração real
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-deck', {
+        body: { image: imagePreview }
+      });
+
+      if (error) {
+        console.error('Erro ao analisar deck:', error);
+        toast.error("Erro ao analisar deck. Tente novamente!");
+        setIsAnalyzing(false);
+        return;
+      }
+
+      console.log('Resultado da análise:', data);
+      setAnalysisResult(data);
       setIsAnalyzing(false);
       setShowResult(true);
-      toast.success("Deck counter gerado com sucesso! 🏆");
-    }, 2500);
+      
+      if (data.isAbsoluteCounter) {
+        toast.success("💥 Counter absoluto detectado! 🏆");
+      } else {
+        toast.success("Deck counter gerado com sucesso! ⚔️");
+      }
+    } catch (err) {
+      console.error('Erro inesperado:', err);
+      toast.error("Erro ao analisar deck. Tente novamente!");
+      setIsAnalyzing(false);
+    }
   };
 
   const handleNewAnalysis = () => {
     setShowResult(false);
     setSelectedImage(null);
     setImagePreview(null);
+    setAnalysisResult(null);
   };
 
   return (
@@ -111,12 +101,12 @@ const Index = () => {
       <div className="relative z-10 container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12 animate-float">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <Zap className="w-12 h-12 text-gold animate-pulse" />
+          <div className="inline-flex items-center justify-center gap-3 mb-4">
+            <img src={crownLogo} alt="Clash IA Crown" className="w-16 h-16 animate-pulse" />
             <h1 className="text-6xl font-black bg-gradient-gold bg-clip-text text-transparent">
               Clash IA
             </h1>
-            <Zap className="w-12 h-12 text-gold animate-pulse" />
+            <img src={crownLogo} alt="Clash IA Crown" className="w-16 h-16 animate-pulse" />
           </div>
           <p className="text-xl text-muted-foreground mb-2">
             O Criador de Decks Counter Supremo
@@ -247,10 +237,14 @@ const Index = () => {
               Analisar Novo Deck
             </Button>
             
-            <CounterDeckResult 
-              cards={mockCounterDeck.cards}
-              counterName={mockCounterDeck.counterName}
-            />
+            {analysisResult && (
+              <CounterDeckResult 
+                enemyDeck={analysisResult.enemyDeck}
+                counterDeck={analysisResult.counterDeck}
+                counterName={analysisResult.counterName}
+                isAbsoluteCounter={analysisResult.isAbsoluteCounter}
+              />
+            )}
           </div>
         )}
 
