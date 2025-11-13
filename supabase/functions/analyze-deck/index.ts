@@ -70,35 +70,48 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    const aiPrompt = `Você é a Clash IA, especialista em Clash Royale.
+    const aiPrompt = `Você é a Clash IA, especialista em Clash Royale com conhecimento profundo de TODAS as cartas do jogo.
 
-Analise as seguintes informações extraídas de uma imagem de deck:
+INSTRUÇÕES DE IDENTIFICAÇÃO DE CARTAS:
+- Analise cuidadosamente o texto detectado para identificar nomes de cartas
+- Considere variações de escrita e abreviações comuns (ex: "Mega Knight", "MK", "Megacavaleiro")
+- Preste atenção em números de nível e custo de elixir mencionados
+- Use as labels visuais para identificar tipos de cartas (tropa, spell, building)
+- Se houver ícones de custo de elixir, use-os para validar as cartas identificadas
+- Cartas comuns do meta atual: Hog Rider, Megacavaleiro, P.E.K.K.A, Gigante, Balão, Megaesbirro, Valquíria, Eletrogigante, Porco Montado
+
+Informações extraídas da imagem:
 - Texto detectado: ${detectedText}
-- Labels: ${labels.join(', ')}
+- Labels visuais: ${labels.join(', ')}
 
-Com base nessas informações:
-1. Identifique as 8 cartas do deck inimigo (se não conseguir identificar todas, use as cartas mais prováveis baseado no contexto de Clash Royale)
+TAREFA:
+1. Identifique as 8 cartas do deck inimigo com máxima precisão
+   - Use APENAS cartas reais do Clash Royale
+   - Se não conseguir identificar alguma carta com certeza, use cartas populares do meta baseando-se no contexto
+   - Valide se as cartas fazem sentido juntas (sinergia de deck)
+
 2. Crie o melhor deck counter possível (8 cartas)
-3. Para cada carta do counter, explique:
-   - Qual(is) carta(s) do deck inimigo ela neutraliza
-   - Por que foi escolhida
-   - Como e quando usar
+   - Considere custos de elixir balanceados
+   - Inclua cartas que neutralizem múltiplas ameaças do deck inimigo
+   - Garanta boa defesa E ataque
 
-Responda APENAS com um JSON válido neste formato:
+3. Para cada carta do counter, explique de forma detalhada e prática
+
+Responda APENAS com um JSON válido neste formato exato:
 {
   "enemyDeck": [
-    {"name": "Nome da Carta", "icon": "emoji"}
+    {"name": "Nome da Carta", "icon": "emoji representativo"}
   ],
   "counterDeck": [
     {
       "name": "Nome da Carta",
-      "icon": "emoji",
-      "role": "Papel (ex: Tanque, Suporte)",
-      "explanation": "Explicação detalhada",
+      "icon": "emoji representativo",
+      "role": "Papel no deck (ex: Tanque, Win Condition, Spell, Suporte, Defesa Aérea)",
+      "explanation": "Explicação detalhada de uso, timing ideal e posicionamento",
       "counters": ["Carta Inimiga 1", "Carta Inimiga 2"]
     }
   ],
-  "counterName": "Nome épico do deck counter",
+  "counterName": "Nome épico e criativo para o deck counter",
   "isAbsoluteCounter": true/false
 }`;
 

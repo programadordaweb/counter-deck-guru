@@ -102,11 +102,11 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-12 animate-float">
           <div className="inline-flex items-center justify-center gap-3 mb-4">
-            <img src={crownLogo} alt="Clash IA Crown" className="w-16 h-16 animate-pulse" />
+            <img src={crownLogo} alt="Clash IA Crown" className="w-16 object-contain animate-pulse" />
             <h1 className="text-6xl font-black bg-gradient-gold bg-clip-text text-transparent">
               Clash IA
             </h1>
-            <img src={crownLogo} alt="Clash IA Crown" className="w-16 h-16 animate-pulse" />
+            <img src={crownLogo} alt="Clash IA Crown" className="w-16 object-contain animate-pulse" />
           </div>
           <p className="text-xl text-muted-foreground mb-2">
             O Criador de Decks Counter Supremo
