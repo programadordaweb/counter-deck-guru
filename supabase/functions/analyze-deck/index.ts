@@ -12,10 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { image } = await req.json();
+    const { image, deckText } = await req.json();
     
-    if (!image) {
-      throw new Error('Imagem não fornecida');
+    if (!image && !deckText) {
+      throw new Error('Imagem ou texto não fornecidos');
     }
 
     console.log('Iniciando análise de deck...');
@@ -23,8 +23,14 @@ serve(async (req) => {
     // Usando dados mock temporários (Google Vision API será integrada posteriormente)
     console.log('Usando análise mock - API do Google Vision será integrada em breve');
     
-    const detectedText = 'Deck do oponente com cartas populares do meta';
+    let detectedText = 'Deck do oponente com cartas populares do meta';
     const labels = ['game', 'mobile game', 'cards', 'strategy'];
+    
+    // Se o usuário digitou as cartas, use o texto fornecido
+    if (deckText) {
+      console.log('Usando texto fornecido pelo usuário:', deckText);
+      detectedText = deckText;
+    }
 
     // Step 2: Use Lovable AI to analyze and generate counter deck
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
