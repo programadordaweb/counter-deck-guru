@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft } from "lucide-react";
+import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft, FileText } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { CounterDeckResult } from "@/components/CounterDeckResult";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ interface AnalysisResult {
 const Index = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [deckText, setDeckText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -48,8 +50,8 @@ const Index = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!selectedImage || !imagePreview) {
-      toast.error("Envie uma imagem do deck primeiro!");
+    if (!selectedImage && !imagePreview && !deckText.trim()) {
+      toast.error("Envie uma imagem ou digite as cartas do deck!");
       return;
     }
     
@@ -58,7 +60,10 @@ const Index = () => {
     
     try {
       const { data, error } = await supabase.functions.invoke('analyze-deck', {
-        body: { image: imagePreview }
+        body: { 
+          image: imagePreview,
+          deckText: deckText.trim()
+        }
       });
 
       if (error) {
@@ -89,6 +94,7 @@ const Index = () => {
     setShowResult(false);
     setSelectedImage(null);
     setImagePreview(null);
+    setDeckText("");
     setAnalysisResult(null);
   };
 
@@ -187,13 +193,30 @@ const Index = () => {
               )}
             </div>
 
+            {/* Texto alternativo */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-primary" />
+                <label className="text-sm font-medium">Ou digite as cartas do deck inimigo:</label>
+              </div>
+              <Textarea
+                placeholder="Ex: Megacavaleiro, Arqueiras, Foguete, Barril de Goblins..."
+                value={deckText}
+                onChange={(e) => setDeckText(e.target.value)}
+                className="min-h-[100px] resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Digite os nomes das 8 cartas separadas por vírgula
+              </p>
+            </div>
+
             {/* Action Button */}
             <Button
               variant="hero"
               size="lg"
               className="w-full text-lg h-14"
               onClick={handleAnalyze}
-              disabled={!selectedImage || isAnalyzing}
+              disabled={(!selectedImage && !deckText.trim()) || isAnalyzing}
             >
               {isAnalyzing ? (
                 <>
