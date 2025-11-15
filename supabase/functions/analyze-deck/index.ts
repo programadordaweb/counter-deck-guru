@@ -20,49 +20,11 @@ serve(async (req) => {
 
     console.log('Iniciando análise de deck...');
 
-    // Step 1: Use Google Vision API to detect text/labels in the image
-    const GOOGLE_VISION_API_KEY = Deno.env.get('GOOGLE_VISION_API_KEY');
-    if (!GOOGLE_VISION_API_KEY) {
-      throw new Error('GOOGLE_VISION_API_KEY não configurada');
-    }
-
-    // Remove data URL prefix if present
-    const base64Image = image.replace(/^data:image\/\w+;base64,/, '');
-
-    const visionResponse = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: { content: base64Image },
-              features: [
-                { type: 'TEXT_DETECTION', maxResults: 10 },
-                { type: 'LABEL_DETECTION', maxResults: 10 }
-              ]
-            }
-          ]
-        })
-      }
-    );
-
-    if (!visionResponse.ok) {
-      const errorText = await visionResponse.text();
-      console.error('Google Vision API error:', errorText);
-      throw new Error('Erro ao analisar imagem com Google Vision');
-    }
-
-    const visionData = await visionResponse.json();
-    console.log('Vision API response:', JSON.stringify(visionData, null, 2));
-
-    // Extract detected text and labels
-    const detectedText = visionData.responses?.[0]?.textAnnotations?.[0]?.description || '';
-    const labels = visionData.responses?.[0]?.labelAnnotations?.map((l: any) => l.description) || [];
+    // Usando dados mock temporários (Google Vision API será integrada posteriormente)
+    console.log('Usando análise mock - API do Google Vision será integrada em breve');
     
-    console.log('Texto detectado:', detectedText);
-    console.log('Labels detectadas:', labels);
+    const detectedText = 'Deck do oponente com cartas populares do meta';
+    const labels = ['game', 'mobile game', 'cards', 'strategy'];
 
     // Step 2: Use Lovable AI to analyze and generate counter deck
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
