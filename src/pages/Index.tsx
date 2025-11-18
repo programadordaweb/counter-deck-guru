@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft, FileText } from "lucide-react";
+import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft, FileText, Crown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { CounterDeckResult } from "@/components/CounterDeckResult";
+import { PricingModal } from "@/components/PricingModal";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/hooks/useSubscription";
 import crownLogo from "@/assets/crown-logo.png";
 
 interface EnemyCard {
@@ -32,11 +35,21 @@ const Index = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deckText, setDeckText] = useState("");
+  const [arena, setArena] = useState<string>("1");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [showPricing, setShowPricing] = useState(false);
+  
+  const { isPremium, loading: subscriptionLoading } = useSubscription();
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isPremium) {
+      toast.error("📸 Upload de imagens é exclusivo para Premium!");
+      setShowPricing(true);
+      return;
+    }
+    
     const file = event.target.files?.[0];
     if (file) {
       setSelectedImage(file);
@@ -62,7 +75,9 @@ const Index = () => {
       const { data, error } = await supabase.functions.invoke('analyze-deck', {
         body: { 
           image: imagePreview,
-          deckText: deckText.trim()
+          deckText: deckText.trim(),
+          arena: parseInt(arena),
+          isPremium
         }
       });
 
@@ -95,7 +110,14 @@ const Index = () => {
     setSelectedImage(null);
     setImagePreview(null);
     setDeckText("");
+    setArena("1");
     setAnalysisResult(null);
+  };
+
+  const handleUpgrade = () => {
+    // TODO: Integrar com Abacate Pay API
+    toast.info("Em breve: pagamento via Abacate Pay");
+    setShowPricing(false);
   };
 
   return (
@@ -122,6 +144,28 @@ const Index = () => {
             Powered by Inteligência Artificial Lendária
             <Shield className="w-4 h-4" />
           </p>
+          
+          {/* Premium Badge */}
+          {!subscriptionLoading && (
+            <div className="mt-4">
+              {isPremium ? (
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-arena rounded-full border border-gold/50">
+                  <Crown className="w-4 h-4 text-gold" />
+                  <span className="text-sm font-medium text-gold">Premium Ativo</span>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowPricing(true)}
+                  className="border-gold/50 hover:bg-gold/10"
+                >
+                  <Crown className="w-4 h-4 mr-2 text-gold" />
+                  Assinar Premium - R$ 9,90/mês
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main Content */}
@@ -197,7 +241,7 @@ const Index = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4 text-primary" />
-                <label className="text-sm font-medium">Ou digite as cartas do deck inimigo:</label>
+                <label className="text-sm font-medium">Digite as cartas do deck inimigo:</label>
               </div>
               <Textarea
                 placeholder="Ex: Megacavaleiro, Arqueiras, Foguete, Barril de Goblins..."
@@ -208,6 +252,36 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">
                 Digite os nomes das 8 cartas separadas por vírgula
               </p>
+            </div>
+
+            {/* Seletor de Arena */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-primary" />
+                <label className="text-sm font-medium">Selecione sua Arena:</label>
+              </div>
+              <Select value={arena} onValueChange={setArena}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Escolha sua arena" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Arena 1 - Treinamento</SelectItem>
+                  <SelectItem value="2">Arena 2 - Ossos</SelectItem>
+                  <SelectItem value="3">Arena 3 - Bárbaros</SelectItem>
+                  <SelectItem value="4">Arena 4 - P.E.K.K.A</SelectItem>
+                  <SelectItem value="5">Arena 5 - Magias</SelectItem>
+                  <SelectItem value="6">Arena 6 - Construtores</SelectItem>
+                  <SelectItem value="7">Arena 7 - Royal</SelectItem>
+                  <SelectItem value="8">Arena 8 - Congelada</SelectItem>
+                  <SelectItem value="9">Arena 9 - Selva</SelectItem>
+                  <SelectItem value="10">Arena 10 - Horda</SelectItem>
+                  <SelectItem value="11">Arena 11 - Elétrica</SelectItem>
+                  <SelectItem value="12">Arena 12 - Lendária</SelectItem>
+                  <SelectItem value="13">Arena 13 - Rascunho</SelectItem>
+                  <SelectItem value="14">Arena 14 - Mestre</SelectItem>
+                  <SelectItem value="15">Arena 15 - Campeão</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Action Button */}
@@ -281,6 +355,13 @@ const Index = () => {
           </p>
         </div>
       </div>
+
+      {/* Pricing Modal */}
+      <PricingModal 
+        open={showPricing} 
+        onOpenChange={setShowPricing}
+        onUpgrade={handleUpgrade}
+      />
     </div>
   );
 };
