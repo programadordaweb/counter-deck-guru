@@ -12,14 +12,22 @@ serve(async (req) => {
   }
 
   try {
-    const { image, deckText } = await req.json();
+    const { image, deckText, arena, isPremium } = await req.json();
     
     if (!image && !deckText) {
       throw new Error('Imagem ou texto não fornecidos');
     }
 
-    console.log('Iniciando análise de deck...');
-
+    console.log('Iniciando análise de deck...', { arena, isPremium });
+    
+    // Verificar se é premium quando tenta usar imagem
+    if (image && !isPremium) {
+      return new Response(
+        JSON.stringify({ error: 'Upload de imagens é exclusivo para Premium' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+    
     // Usando dados mock temporários (Google Vision API será integrada posteriormente)
     console.log('Usando análise mock - API do Google Vision será integrada em breve');
     
@@ -38,6 +46,14 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
+    const arenaContext = arena ? `\n\nARENA DO JOGADOR: Arena ${arena}
+- Sugira APENAS cartas disponíveis até a Arena ${arena}
+- Certifique-se de que todas as cartas counter estão desbloqueadas nesta arena` : '';
+    
+    const premiumContext = isPremium 
+      ? '\n\nMODO PREMIUM: Forneça análise AVANÇADA com estratégias detalhadas, posicionamento específico e timings precisos.'
+      : '\n\nMODO GRÁTIS: Forneça análise BÁSICA com explicações simples e diretas.';
+
     const aiPrompt = `Você é a Clash IA, especialista em Clash Royale com conhecimento profundo de TODAS as cartas do jogo.
 
 INSTRUÇÕES DE IDENTIFICAÇÃO DE CARTAS:
@@ -48,9 +64,9 @@ INSTRUÇÕES DE IDENTIFICAÇÃO DE CARTAS:
 - Se houver ícones de custo de elixir, use-os para validar as cartas identificadas
 - Cartas comuns do meta atual: Hog Rider, Megacavaleiro, P.E.K.K.A, Gigante, Balão, Megaesbirro, Valquíria, Eletrogigante, Porco Montado
 
-Informações extraídas da imagem:
+Informações extraídas:
 - Texto detectado: ${detectedText}
-- Labels visuais: ${labels.join(', ')}
+- Labels visuais: ${labels.join(', ')}${arenaContext}${premiumContext}
 
 TAREFA:
 1. Identifique as 8 cartas do deck inimigo com máxima precisão
@@ -59,6 +75,7 @@ TAREFA:
    - Valide se as cartas fazem sentido juntas (sinergia de deck)
 
 2. Crie o melhor deck counter possível (8 cartas)
+   - IMPORTANTE: Use apenas cartas disponíveis na arena especificada
    - Considere custos de elixir balanceados
    - Inclua cartas que neutralizem múltiplas ameaças do deck inimigo
    - Garanta boa defesa E ataque

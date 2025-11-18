@@ -2,3 +2,6 @@ project_id = "guzayjvdrpzvjkkvbcxq"
 
 [functions.analyze-deck]
 verify_jwt = false
+
+[functions.create-abacate-pay-subscription]
+verify_jwt = true
