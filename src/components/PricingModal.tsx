@@ -12,8 +12,8 @@ interface PricingModalProps {
 
 export const PricingModal = ({ open, onOpenChange, onUpgrade }: PricingModalProps) => {
   const handleUpgrade = () => {
-    toast.info("Redirecionando para pagamento via Abacate Pay...");
-    onUpgrade();
+    window.open("https://buy.stripe.com/test_28EaEXdqCf0w1z074A7bW00", "_blank");
+    onOpenChange(false);
   };
 
   return (
