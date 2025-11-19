@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { CounterDeckResult } from "@/components/CounterDeckResult";
 import { PricingModal } from "@/components/PricingModal";
+import { ArenaSelector } from "@/components/ArenaSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
 import crownLogo from "@/assets/crown-logo.png";
@@ -255,18 +256,10 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Select value={arena} onValueChange={setArena}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a arena" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 15 }, (_, i) => i + 1).map((arenaNum) => (
-                    <SelectItem key={arenaNum} value={arenaNum.toString()}>
-                      Arena {arenaNum}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ArenaSelector 
+                selectedArena={arena} 
+                onArenaSelect={setArena}
+              />
             </CardContent>
           </Card>
 
