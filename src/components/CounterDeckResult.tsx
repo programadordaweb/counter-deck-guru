@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Zap, Target, Shield, Swords } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Zap, Target, Shield, Swords, ArrowLeft } from "lucide-react";
 
 interface EnemyCard {
   name: string;
@@ -21,6 +22,7 @@ interface CounterDeckResultProps {
   counterName?: string;
   isAbsoluteCounter?: boolean;
   finalMessage?: string;
+  onNewAnalysis?: () => void;
 }
 
 export const CounterDeckResult = ({ 
@@ -28,7 +30,8 @@ export const CounterDeckResult = ({
   counterDeck, 
   counterName,
   isAbsoluteCounter = false,
-  finalMessage = "🔥 Vá para a arena e mostre quem domina o campo, campeão da torre!"
+  finalMessage = "🔥 Vá para a arena e mostre quem domina o campo, campeão da torre!",
+  onNewAnalysis
 }: CounterDeckResultProps) => {
   return (
     <div className="space-y-6 animate-fade-in">
@@ -157,6 +160,15 @@ export const CounterDeckResult = ({
         <p className="text-sm text-muted-foreground">
           👑 Vitória garantida pela Clash IA
         </p>
+        {onNewAnalysis && (
+          <Button 
+            onClick={onNewAnalysis}
+            className="mt-4 bg-gradient-arena hover:shadow-glow transition-all"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Nova Análise
+          </Button>
+        )}
       </div>
     </div>
   );

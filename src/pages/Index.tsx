@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft, FileText, Crown } from "lucide-react";
+import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft, FileText, Crown, LogOut, User } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ interface AnalysisResult {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deckText, setDeckText] = useState("");
@@ -40,16 +42,39 @@ const Index = () => {
   const [showResult, setShowResult] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showPricing, setShowPricing] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   
   const { isPremium, loading: subscriptionLoading } = useSubscription();
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+      } else {
+        setUserEmail(user.email || null);
+      }
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUserEmail(session.user.email || null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Logout realizado com sucesso!");
+    navigate("/auth");
+  };
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isPremium) {
-      toast.error("📸 Upload de imagens é exclusivo para Premium!");
-      setShowPricing(true);
-      return;
-    }
-    
     const file = event.target.files?.[0];
     if (file) {
       setSelectedImage(file);
@@ -60,6 +85,15 @@ const Index = () => {
       reader.readAsDataURL(file);
       toast.success("Imagem do deck inimigo carregada! ⚔️");
     }
+  };
+
+  const handleImageUploadClick = () => {
+    if (!isPremium) {
+      toast.error("📸 Upload de imagens é exclusivo para Premium!");
+      setShowPricing(true);
+      return;
+    }
+    document.getElementById('image-upload')?.click();
   };
 
   const handleAnalyze = async () => {
@@ -115,250 +149,234 @@ const Index = () => {
   };
 
   const handleUpgrade = () => {
-    // TODO: Integrar com Abacate Pay API
-    toast.info("Em breve: pagamento via Abacate Pay");
     setShowPricing(false);
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-arena opacity-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-arena-blue/20 via-transparent to-transparent" />
-      
-      <div className="relative z-10 container mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-12 animate-float">
-          <div className="inline-flex items-center justify-center gap-3 mb-4">
-            <img src={crownLogo} alt="Clash IA Crown" className="w-32 object-contain animate-pulse" />
-            <h1 className="text-6xl font-black bg-gradient-gold bg-clip-text text-transparent">
-              Clash IA
-            </h1>
-            <img src={crownLogo} alt="Clash IA Crown" className="w-32 object-contain animate-pulse" />
-          </div>
-          <p className="text-xl text-muted-foreground mb-2">
-            O Criador de Decks Counter Supremo
-          </p>
-          <p className="text-sm text-foreground/70 flex items-center justify-center gap-2">
-            <Shield className="w-4 h-4" />
-            Powered by Inteligência Artificial Lendária
-            <Shield className="w-4 h-4" />
-          </p>
-          
-          {/* Premium Badge */}
-          {!subscriptionLoading && (
-            <div className="mt-4">
-              {isPremium ? (
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-arena rounded-full border border-gold/50">
-                  <Crown className="w-4 h-4 text-gold" />
-                  <span className="text-sm font-medium text-gold">Premium Ativo</span>
-                </div>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowPricing(true)}
-                  className="border-gold/50 hover:bg-gold/10"
-                >
-                  <Crown className="w-4 h-4 mr-2 text-gold" />
-                  Assinar Premium - R$ 9,90/mês
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Main Content */}
-        {!showResult ? (
-          <Card className="max-w-2xl mx-auto shadow-card border-border/50 bg-card/80 backdrop-blur-sm">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
-                <Target className="w-8 h-8 text-primary" />
-                Destrua Qualquer Deck
-              </CardTitle>
-              <CardDescription className="text-base">
-                Envie uma imagem do deck inimigo e descubra o deck counter perfeito
-              </CardDescription>
-            </CardHeader>
-          
-          <CardContent className="space-y-6">
-            {/* Upload Area */}
-            <div className="space-y-4">
-              <label 
-                htmlFor="deck-upload" 
-                className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted/20 hover:bg-muted/40 transition-all group relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-arena opacity-0 group-hover:opacity-10 transition-opacity" />
-                <div className="flex flex-col items-center justify-center pt-5 pb-6 relative z-10">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img 
-                        src={imagePreview} 
-                        alt="Deck Preview" 
-                        className="max-h-48 rounded-lg shadow-glow"
-                      />
-                      <div className="absolute inset-0 bg-gradient-arena opacity-0 group-hover:opacity-20 transition-opacity rounded-lg" />
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="w-16 h-16 mb-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      <p className="mb-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                        <span className="font-semibold">Clique para enviar</span> ou arraste a imagem
-                      </p>
-                      <p className="text-xs text-muted-foreground">PNG, JPG ou WEBP</p>
-                    </>
-                  )}
-                </div>
-                <input 
-                  id="deck-upload" 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-              </label>
-
-              {selectedImage && (
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">{selectedImage.name}</span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedImage(null);
-                      setImagePreview(null);
-                    }}
-                    className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    Remover
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Texto alternativo */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-primary" />
-                <label className="text-sm font-medium">Digite as cartas do deck inimigo:</label>
+    <div className="min-h-screen bg-gradient-to-br from-background via-card to-background p-4 md:p-8">
+      <div className="max-w-4xl mx-auto mb-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            {isPremium && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-gold/20 border border-gold/30">
+                <Crown className="w-4 h-4 text-gold" />
+                <span className="text-sm font-medium text-gold">Premium</span>
               </div>
-              <Textarea
-                placeholder="Ex: Megacavaleiro, Arqueiras, Foguete, Barril de Goblins..."
-                value={deckText}
-                onChange={(e) => setDeckText(e.target.value)}
-                className="min-h-[100px] resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                Digite os nomes das 8 cartas separadas por vírgula
-              </p>
-            </div>
-
-            {/* Seletor de Arena */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-primary" />
-                <label className="text-sm font-medium">Selecione sua Arena:</label>
-              </div>
-              <Select value={arena} onValueChange={setArena}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Escolha sua arena" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Arena 1 - Treinamento</SelectItem>
-                  <SelectItem value="2">Arena 2 - Ossos</SelectItem>
-                  <SelectItem value="3">Arena 3 - Bárbaros</SelectItem>
-                  <SelectItem value="4">Arena 4 - P.E.K.K.A</SelectItem>
-                  <SelectItem value="5">Arena 5 - Magias</SelectItem>
-                  <SelectItem value="6">Arena 6 - Construtores</SelectItem>
-                  <SelectItem value="7">Arena 7 - Royal</SelectItem>
-                  <SelectItem value="8">Arena 8 - Congelada</SelectItem>
-                  <SelectItem value="9">Arena 9 - Selva</SelectItem>
-                  <SelectItem value="10">Arena 10 - Horda</SelectItem>
-                  <SelectItem value="11">Arena 11 - Elétrica</SelectItem>
-                  <SelectItem value="12">Arena 12 - Lendária</SelectItem>
-                  <SelectItem value="13">Arena 13 - Rascunho</SelectItem>
-                  <SelectItem value="14">Arena 14 - Mestre</SelectItem>
-                  <SelectItem value="15">Arena 15 - Campeão</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Action Button */}
-            <Button
-              variant="hero"
-              size="lg"
-              className="w-full text-lg h-14"
-              onClick={handleAnalyze}
-              disabled={(!selectedImage && !deckText.trim()) || isAnalyzing}
-            >
-              {isAnalyzing ? (
-                <>
-                  <Sparkles className="w-5 h-5 animate-spin" />
-                  Analisando Deck...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  Gerar Deck Counter
-                  <Zap className="w-5 h-5" />
-                </>
-              )}
-            </Button>
-
-            {/* Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4">
-              <div className="flex items-center gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
-                <Zap className="w-5 h-5 text-gold" />
-                <span className="text-xs font-medium">Análise Instantânea</span>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
-                <Target className="w-5 h-5 text-primary" />
-                <span className="text-xs font-medium">Counter Perfeito</span>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
-                <Shield className="w-5 h-5 text-secondary" />
-                <span className="text-xs font-medium">Estratégia Detalhada</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        ) : (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <Button
-              variant="ghost"
-              onClick={handleNewAnalysis}
-              className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Analisar Novo Deck
-            </Button>
-            
-            {analysisResult && (
-              <CounterDeckResult 
-                enemyDeck={analysisResult.enemyDeck}
-                counterDeck={analysisResult.counterDeck}
-                counterName={analysisResult.counterName}
-                isAbsoluteCounter={analysisResult.isAbsoluteCounter}
-              />
             )}
           </div>
-        )}
-
-        {/* Footer Info */}
-        <div className="text-center mt-12 space-y-2">
-          <p className="text-sm text-muted-foreground">
-            🏆 Prepare-se para subir de arena, guerreiro da torre!
-          </p>
-          <p className="text-xs text-muted-foreground/70">
-            ⚔️ Counter absoluto detectado por IA • 🔥 Vitória garantida
-          </p>
+          <div className="flex items-center gap-3">
+            {userEmail && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/50 border border-border/50">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground hidden md:inline">{userEmail}</span>
+              </div>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Pricing Modal */}
-      <PricingModal 
-        open={showPricing} 
+      {showResult && analysisResult ? (
+        <CounterDeckResult 
+          enemyDeck={analysisResult.enemyDeck}
+          counterDeck={analysisResult.counterDeck}
+          counterName={analysisResult.counterName}
+          isAbsoluteCounter={analysisResult.isAbsoluteCounter}
+          onNewAnalysis={handleNewAnalysis}
+        />
+      ) : (
+        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <img src={crownLogo} alt="Clash IA Logo" className="w-16 h-16 object-contain" />
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-gold bg-clip-text text-transparent">
+                Clash IA
+              </h1>
+            </div>
+            <p className="text-xl text-muted-foreground">
+              Sua IA especialista em Clash Royale 👑
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card className="border-primary/30 bg-card/50 hover:border-primary transition-all">
+              <CardHeader className="pb-3">
+                <Sparkles className="w-8 h-8 text-primary mb-2" />
+                <CardTitle className="text-lg">IA Avançada</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Análise profunda com inteligência artificial de última geração
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="border-secondary/30 bg-card/50 hover:border-secondary transition-all">
+              <CardHeader className="pb-3">
+                <Shield className="w-8 h-8 text-secondary mb-2" />
+                <CardTitle className="text-lg">Counter Perfeito</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Decks otimizados para cada arena e situação de jogo
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="border-accent/30 bg-card/50 hover:border-accent transition-all">
+              <CardHeader className="pb-3">
+                <Target className="w-8 h-8 text-accent mb-2" />
+                <CardTitle className="text-lg">Estratégia Clara</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Explicação detalhada de cada carta e como usá-la
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-gold" />
+                Selecione sua Arena
+              </CardTitle>
+              <CardDescription>
+                Isso ajudará a IA a sugerir cartas disponíveis para sua arena
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select value={arena} onValueChange={setArena}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a arena" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 15 }, (_, i) => i + 1).map((arenaNum) => (
+                    <SelectItem key={arenaNum} value={arenaNum.toString()}>
+                      Arena {arenaNum}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-primary" />
+                Como você quer enviar o deck?
+              </CardTitle>
+              <CardDescription>
+                {isPremium 
+                  ? "Escolha entre enviar uma imagem ou digitar as cartas" 
+                  : "Plano grátis: digite as cartas do deck. Assine Premium para enviar imagens!"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div 
+                onClick={handleImageUploadClick}
+                className={`cursor-pointer ${!isPremium ? 'opacity-50' : ''}`}
+              >
+                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-primary/50 rounded-lg hover:border-primary transition-colors bg-card/50 hover:bg-card">
+                  {imagePreview && isPremium ? (
+                    <div className="space-y-4">
+                      <img src={imagePreview} alt="Preview" className="max-h-64 rounded-lg shadow-card" />
+                      <p className="text-sm text-muted-foreground">Clique para trocar a imagem</p>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-12 h-12 text-primary mb-4" />
+                      <p className="text-lg font-medium mb-2">
+                        {isPremium ? "Envie a imagem do deck inimigo" : "Upload de imagens (Premium)"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {isPremium ? "PNG, JPG ou WEBP" : "Assine o plano Premium para usar"}
+                      </p>
+                      {!isPremium && (
+                        <Crown className="w-6 h-6 text-gold mt-2" />
+                      )}
+                    </>
+                  )}
+                </div>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={!isPremium}
+                />
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Ou</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Digite as cartas do deck</p>
+                </div>
+                <Textarea
+                  placeholder="Digite as 8 cartas do deck inimigo, separadas por vírgula&#10;Exemplo: Gigante, Bruxa, Príncipe, Dragão Infernal, Valquíria, Zap, Bola de Fogo, Coletor de Elixir"
+                  value={deckText}
+                  onChange={(e) => setDeckText(e.target.value)}
+                  className="min-h-[120px] resize-none"
+                />
+              </div>
+
+              <Button 
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || subscriptionLoading}
+                size="lg"
+                className="w-full bg-gradient-arena hover:shadow-glow transition-all"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                    Analisando deck...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Gerar Counter Deck
+                  </>
+                )}
+              </Button>
+
+              {!isPremium && (
+                <Button 
+                  onClick={() => setShowPricing(true)}
+                  variant="outline"
+                  size="lg"
+                  className="w-full border-gold/30 hover:border-gold hover:bg-gold/10"
+                >
+                  <Crown className="w-5 h-5 mr-2 text-gold" />
+                  Assinar Premium
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <PricingModal
+        open={showPricing}
         onOpenChange={setShowPricing}
         onUpgrade={handleUpgrade}
       />
