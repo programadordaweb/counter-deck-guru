@@ -9,6 +9,16 @@ import arena7 from "@/assets/arena-7.png";
 import arena8 from "@/assets/arena-8.png";
 import arena9 from "@/assets/arena-9.png";
 import arena10 from "@/assets/arena-10.png";
+import arena11 from "@/assets/arena-11.png";
+import arena12 from "@/assets/arena-12.png";
+import arena13 from "@/assets/arena-13.png";
+import arena14 from "@/assets/arena-14.png";
+import arena15 from "@/assets/arena-15.png";
+import arena16 from "@/assets/arena-16.png";
+import arena17 from "@/assets/arena-17.png";
+import arena18 from "@/assets/arena-18.png";
+import arena19 from "@/assets/arena-19.png";
+import arena20 from "@/assets/arena-20.png";
 
 interface ArenaSelectorProps {
   selectedArena: string;
@@ -26,11 +36,16 @@ const arenas = [
   { number: 8, name: "Arena Congelada", image: arena8 },
   { number: 9, name: "Arena da Selva", image: arena9 },
   { number: 10, name: "Arena do Hog Mountain", image: arena10 },
-  { number: 11, name: "Arena Elétrica", image: arena1 },
-  { number: 12, name: "Arena Batedeira", image: arena2 },
-  { number: 13, name: "Arena do Pico Renegado", image: arena3 },
-  { number: 14, name: "Arena Lendária", image: arena4 },
-  { number: 15, name: "Arena Campeão", image: arena5 },
+  { number: 11, name: "Arena Elétrica", image: arena11 },
+  { number: 12, name: "Arena Batedeira", image: arena12 },
+  { number: 13, name: "Arena do Pico Renegado", image: arena13 },
+  { number: 14, name: "Arena Lendária", image: arena14 },
+  { number: 15, name: "Arena Campeão", image: arena15 },
+  { number: 16, name: "Arena Desafio", image: arena16 },
+  { number: 17, name: "Arena Mestre", image: arena17 },
+  { number: 18, name: "Arena Suprema", image: arena18 },
+  { number: 19, name: "Arena Titã", image: arena19 },
+  { number: 20, name: "Arena Final", image: arena20 },
 ];
 
 export const ArenaSelector = ({ selectedArena, onArenaSelect }: ArenaSelectorProps) => {
