@@ -1,5 +1,14 @@
 import { Card } from "@/components/ui/card";
-import { Crown } from "lucide-react";
+import arena1 from "@/assets/arena-1.png";
+import arena2 from "@/assets/arena-2.png";
+import arena3 from "@/assets/arena-3.png";
+import arena4 from "@/assets/arena-4.png";
+import arena5 from "@/assets/arena-5.png";
+import arena6 from "@/assets/arena-6.png";
+import arena7 from "@/assets/arena-7.png";
+import arena8 from "@/assets/arena-8.png";
+import arena9 from "@/assets/arena-9.png";
+import arena10 from "@/assets/arena-10.png";
 
 interface ArenaSelectorProps {
   selectedArena: string;
@@ -7,21 +16,21 @@ interface ArenaSelectorProps {
 }
 
 const arenas = [
-  { number: 1, name: "Arena de Treinamento", color: "from-[hsl(120,40%,40%)] to-[hsl(120,40%,30%)]" },
-  { number: 2, name: "Arena de Ossos", color: "from-[hsl(30,30%,45%)] to-[hsl(30,30%,35%)]" },
-  { number: 3, name: "Arena de Bárbaros", color: "from-[hsl(25,50%,50%)] to-[hsl(25,50%,40%)]" },
-  { number: 4, name: "Arena P.E.K.K.A", color: "from-[hsl(280,40%,45%)] to-[hsl(280,40%,35%)]" },
-  { number: 5, name: "Arena de Feitiços", color: "from-[hsl(270,60%,50%)] to-[hsl(270,60%,40%)]" },
-  { number: 6, name: "Arena de Construtores", color: "from-[hsl(200,50%,50%)] to-[hsl(200,50%,40%)]" },
-  { number: 7, name: "Arena Real", color: "from-[hsl(220,70%,55%)] to-[hsl(220,70%,45%)]" },
-  { number: 8, name: "Arena Congelada", color: "from-[hsl(195,60%,60%)] to-[hsl(195,60%,50%)]" },
-  { number: 9, name: "Arena da Selva", color: "from-[hsl(140,50%,45%)] to-[hsl(140,50%,35%)]" },
-  { number: 10, name: "Arena do Hog Mountain", color: "from-[hsl(15,60%,55%)] to-[hsl(15,60%,45%)]" },
-  { number: 11, name: "Arena Elétrica", color: "from-[hsl(190,70%,55%)] to-[hsl(190,70%,45%)]" },
-  { number: 12, name: "Arena Batedeira", color: "from-[hsl(30,70%,60%)] to-[hsl(30,70%,50%)]" },
-  { number: 13, name: "Arena do Pico Renegado", color: "from-[hsl(345,60%,50%)] to-[hsl(345,60%,40%)]" },
-  { number: 14, name: "Arena Lendária", color: "from-[hsl(50,90%,60%)] to-[hsl(40,90%,50%)]" },
-  { number: 15, name: "Arena Campeão", color: "from-[hsl(35,95%,55%)] to-[hsl(25,95%,45%)]" },
+  { number: 1, name: "Arena de Treinamento", image: arena1 },
+  { number: 2, name: "Arena de Ossos", image: arena2 },
+  { number: 3, name: "Arena de Bárbaros", image: arena3 },
+  { number: 4, name: "Arena P.E.K.K.A", image: arena4 },
+  { number: 5, name: "Arena de Feitiços", image: arena5 },
+  { number: 6, name: "Arena de Construtores", image: arena6 },
+  { number: 7, name: "Arena Real", image: arena7 },
+  { number: 8, name: "Arena Congelada", image: arena8 },
+  { number: 9, name: "Arena da Selva", image: arena9 },
+  { number: 10, name: "Arena do Hog Mountain", image: arena10 },
+  { number: 11, name: "Arena Elétrica", image: arena1 },
+  { number: 12, name: "Arena Batedeira", image: arena2 },
+  { number: 13, name: "Arena do Pico Renegado", image: arena3 },
+  { number: 14, name: "Arena Lendária", image: arena4 },
+  { number: 15, name: "Arena Campeão", image: arena5 },
 ];
 
 export const ArenaSelector = ({ selectedArena, onArenaSelect }: ArenaSelectorProps) => {
@@ -32,26 +41,30 @@ export const ArenaSelector = ({ selectedArena, onArenaSelect }: ArenaSelectorPro
           key={arena.number}
           onClick={() => onArenaSelect(arena.number.toString())}
           className={`
-            relative cursor-pointer transition-all duration-300 p-4 
+            relative cursor-pointer transition-all duration-300 overflow-hidden
             hover:scale-105 hover:shadow-glow
             ${selectedArena === arena.number.toString() 
-              ? 'ring-2 ring-gold shadow-gold scale-105' 
-              : 'hover:ring-1 hover:ring-primary/50'
+              ? 'ring-4 ring-gold shadow-gold scale-105' 
+              : 'hover:ring-2 hover:ring-primary/50'
             }
           `}
         >
-          <div className={`
-            absolute inset-0 rounded-lg bg-gradient-to-br ${arena.color} opacity-80
-          `} />
-          <div className="relative flex flex-col items-center justify-center gap-2 text-center">
-            <Crown className="w-6 h-6 text-foreground" />
-            <div className="font-bold text-foreground text-sm">{arena.number}</div>
-            <div className="text-xs text-foreground/90 hidden sm:block line-clamp-2">
-              {arena.name}
+          <div className="relative aspect-square">
+            <img 
+              src={arena.image} 
+              alt={arena.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+              <div className="font-bold text-white text-center text-xs sm:text-sm">
+                Arena {arena.number}
+              </div>
             </div>
           </div>
           {selectedArena === arena.number.toString() && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gold animate-pulse" />
+            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gold flex items-center justify-center animate-pulse">
+              <span className="text-black text-xs font-bold">✓</span>
+            </div>
           )}
         </Card>
       ))}
