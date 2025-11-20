@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Sparkles, Zap, Shield, Target, ArrowLeft, FileText, Crown, LogOut, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Upload, Sparkles, Zap, Shield, Target, FileText, Crown, LogOut } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { CounterDeckResult } from "@/components/CounterDeckResult";
 import { PricingModal } from "@/components/PricingModal";
@@ -157,30 +159,52 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto mb-6">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            {isPremium && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-gold/20 border border-gold/30">
-                <Crown className="w-4 h-4 text-gold" />
-                <span className="text-sm font-medium text-gold">Premium</span>
-              </div>
-            )}
+          <div className="flex items-center gap-3">
+            <img src={crownLogo} alt="Clash IA" className="w-10 h-10" />
+            <h2 className="text-2xl font-bold bg-gradient-gold bg-clip-text text-transparent">
+              Clash IA
+            </h2>
           </div>
           <div className="flex items-center gap-3">
-            {userEmail && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/50 border border-border/50">
-                <User className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground hidden md:inline">{userEmail}</span>
-              </div>
+            {isPremium && (
+              <Badge className="bg-gold text-black hover:bg-gold/90 hidden sm:flex">
+                ⭐ Premium
+              </Badge>
             )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSignOut}
-              className="gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
+            {userEmail && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userEmail}`} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {userEmail[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex items-center gap-3 p-2 border-b">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userEmail}`} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {userEmail[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium">{userEmail}</p>
+                      <Badge variant="outline" className="w-fit text-xs">
+                        {isPremium ? '⭐ Premium' : 'Free'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
