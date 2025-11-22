@@ -148,9 +148,21 @@ const Index = () => {
     }
     
     setIsAnalyzing(true);
-    toast.info("Analisando deck inimigo... 🔍");
+    console.log('🎮 Iniciando análise de deck...');
+    console.log('Arena selecionada:', arena);
+    console.log('Premium:', isPremium);
+    console.log('Tem imagem:', !!(selectedImage || imagePreview));
+    console.log('Tem texto:', !!deckText.trim());
+    
+    if (deckText.trim()) {
+      console.log('📝 Texto do deck:', deckText);
+      toast.info("Analisando cartas do deck... 🔍");
+    } else {
+      toast.info("Analisando imagem do deck... 🔍");
+    }
     
     try {
+      console.log('📡 Chamando edge function analyze-deck...');
       const { data, error } = await supabase.functions.invoke('analyze-deck', {
         body: { 
           image: imagePreview,
@@ -161,13 +173,13 @@ const Index = () => {
       });
 
       if (error) {
-        console.error('Erro ao analisar deck:', error);
+        console.error('❌ Erro ao analisar deck:', error);
         toast.error("Erro ao analisar deck. Tente novamente!");
         setIsAnalyzing(false);
         return;
       }
 
-      console.log('Resultado da análise:', data);
+      console.log('✅ Resultado da análise recebido:', data);
       setAnalysisResult(data);
       setIsAnalyzing(false);
       setShowResult(true);
@@ -178,7 +190,7 @@ const Index = () => {
         toast.success("Deck counter gerado com sucesso! ⚔️");
       }
     } catch (err) {
-      console.error('Erro inesperado:', err);
+      console.error('❌ Erro inesperado:', err);
       toast.error("Erro ao analisar deck. Tente novamente!");
       setIsAnalyzing(false);
     }

@@ -14,30 +14,36 @@ serve(async (req) => {
   try {
     const { image, deckText, arena, isPremium } = await req.json();
     
+    console.log('=== INÍCIO DA ANÁLISE ===');
+    console.log('Arena:', arena);
+    console.log('isPremium:', isPremium);
+    console.log('Tem imagem:', !!image);
+    console.log('Tem texto:', !!deckText);
+    
     if (!image && !deckText) {
+      console.error('❌ Erro: Nenhuma imagem ou texto fornecido');
       throw new Error('Imagem ou texto não fornecidos');
     }
 
-    console.log('Iniciando análise de deck...', { arena, isPremium });
-    
     // Verificar se é premium quando tenta usar imagem
     if (image && !isPremium) {
+      console.warn('⚠️ Usuário não premium tentou fazer upload de imagem');
       return new Response(
         JSON.stringify({ error: 'Upload de imagens é exclusivo para Premium' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
       );
     }
     
-    // Usando dados mock temporários (Google Vision API será integrada posteriormente)
-    console.log('Usando análise mock - API do Google Vision será integrada em breve');
-    
     let detectedText = 'Deck do oponente com cartas populares do meta';
     const labels = ['game', 'mobile game', 'cards', 'strategy'];
     
     // Se o usuário digitou as cartas, use o texto fornecido
     if (deckText) {
-      console.log('Usando texto fornecido pelo usuário:', deckText);
+      console.log('✅ Usando texto fornecido pelo usuário');
+      console.log('📝 Texto do deck:', deckText);
       detectedText = deckText;
+    } else if (image) {
+      console.log('🖼️ Usando imagem (análise mock por enquanto)');
     }
 
     // Step 2: Use Lovable AI to analyze and generate counter deck
@@ -100,6 +106,8 @@ Responda APENAS com um JSON válido neste formato exato:
   "isAbsoluteCounter": true/false
 }`;
 
+    console.log('🤖 Chamando IA para gerar counter deck...');
+    
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -137,7 +145,15 @@ Responda APENAS com um JSON válido neste formato exato:
       throw new Error('Resposta da IA não está em formato JSON válido');
     }
 
-    console.log('Deck counter gerado com sucesso');
+    console.log('✅ Deck counter gerado com sucesso!');
+    console.log('📊 Resultado:', {
+      enemyDeckCards: result.enemyDeck?.length,
+      counterDeckCards: result.counterDeck?.length,
+      counterName: result.counterName,
+      isAbsoluteCounter: result.isAbsoluteCounter
+    });
+    console.log('=== FIM DA ANÁLISE ===');
+    
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
