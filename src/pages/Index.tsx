@@ -231,9 +231,9 @@ const Index = () => {
         />
       ) : (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-3">
-              <img src={crownLogo} alt="Clash IA Logo" className="w-16 h-16 object-contain" />
+          <div className="text-center space-y-6">
+            <div className="flex flex-col items-center gap-4">
+              <img src={crownLogo} alt="Clash IA Logo" className="w-24 h-24 md:w-32 md:h-32 object-contain drop-shadow-lg" />
               <h1 className="text-4xl md:text-6xl font-bold bg-gradient-gold bg-clip-text text-transparent">
                 Clash IA
               </h1>
