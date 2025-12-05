@@ -9,11 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Sparkles, Zap, Shield, Target, FileText, Crown, LogOut } from "lucide-react";
+import { Sparkles, Zap, Shield, Target, FileText, Crown, LogOut } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { CounterDeckResult } from "@/components/CounterDeckResult";
-import { PricingModal } from "@/components/PricingModal";
 import { ArenaSelector } from "@/components/ArenaSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -41,14 +40,11 @@ interface AnalysisResult {
 
 const Index = () => {
   const navigate = useNavigate();
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deckText, setDeckText] = useState("");
   const [arena, setArena] = useState<string>("1");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [showPricing, setShowPricing] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -56,8 +52,6 @@ const Index = () => {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
-  
-  const { isPremium, loading: subscriptionLoading } = useSubscription();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -113,28 +107,6 @@ const Index = () => {
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      toast.success("Imagem do deck inimigo carregada! ⚔️");
-    }
-  };
-
-  const handleImageUploadClick = () => {
-    if (!isPremium) {
-      toast.error("📸 Upload de imagens é exclusivo para Premium!");
-      setShowPricing(true);
-      return;
-    }
-    document.getElementById('image-upload')?.click();
-  };
-
   const handleAnalyze = async () => {
     if (!userEmail) {
       toast.error("Faça login para gerar counter decks!");
@@ -142,33 +114,23 @@ const Index = () => {
       return;
     }
     
-    if (!selectedImage && !imagePreview && !deckText.trim()) {
-      toast.error("Envie uma imagem ou digite as cartas do deck!");
+    if (!deckText.trim()) {
+      toast.error("Digite as cartas do deck!");
       return;
     }
     
     setIsAnalyzing(true);
     console.log('🎮 Iniciando análise de deck...');
     console.log('Arena selecionada:', arena);
-    console.log('Premium:', isPremium);
-    console.log('Tem imagem:', !!(selectedImage || imagePreview));
-    console.log('Tem texto:', !!deckText.trim());
-    
-    if (deckText.trim()) {
-      console.log('📝 Texto do deck:', deckText);
-      toast.info("Analisando cartas do deck... 🔍");
-    } else {
-      toast.info("Analisando imagem do deck... 🔍");
-    }
+    console.log('📝 Texto do deck:', deckText);
+    toast.info("Analisando cartas do deck... 🔍");
     
     try {
       console.log('📡 Chamando edge function analyze-deck...');
       const { data, error } = await supabase.functions.invoke('analyze-deck', {
         body: { 
-          image: imagePreview,
           deckText: deckText.trim(),
-          arena: parseInt(arena),
-          isPremium
+          arena: parseInt(arena)
         }
       });
 
@@ -198,15 +160,9 @@ const Index = () => {
 
   const handleNewAnalysis = () => {
     setShowResult(false);
-    setSelectedImage(null);
-    setImagePreview(null);
     setDeckText("");
     setArena("1");
     setAnalysisResult(null);
-  };
-
-  const handleUpgrade = () => {
-    setShowPricing(false);
   };
 
   return (
@@ -220,11 +176,6 @@ const Index = () => {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            {isPremium && (
-              <Badge className="bg-gold text-black hover:bg-gold/90 hidden sm:flex">
-                ⭐ Premium
-              </Badge>
-            )}
             {userEmail ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -248,7 +199,7 @@ const Index = () => {
                     <div className="flex flex-col gap-1">
                       <p className="text-sm font-medium truncate max-w-[150px]">{userEmail}</p>
                       <Badge variant="outline" className="w-fit text-xs">
-                        {isPremium ? '⭐ Premium' : 'Free'}
+                        Conta Ativa
                       </Badge>
                     </div>
                   </div>
@@ -352,59 +303,13 @@ const Index = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-primary" />
-                Como você quer enviar o deck?
+                Digite o deck inimigo
               </CardTitle>
               <CardDescription>
-                {isPremium 
-                  ? "Escolha entre enviar uma imagem ou digitar as cartas" 
-                  : "Plano grátis: digite as cartas do deck. Assine Premium para enviar imagens!"}
+                Informe as 8 cartas do deck que você quer contrar
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div 
-                onClick={handleImageUploadClick}
-                className={`cursor-pointer ${!isPremium ? 'opacity-50' : ''}`}
-              >
-                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-primary/50 rounded-lg hover:border-primary transition-colors bg-card/50 hover:bg-card">
-                  {imagePreview && isPremium ? (
-                    <div className="space-y-4">
-                      <img src={imagePreview} alt="Preview" className="max-h-64 rounded-lg shadow-card" />
-                      <p className="text-sm text-muted-foreground">Clique para trocar a imagem</p>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="w-12 h-12 text-primary mb-4" />
-                      <p className="text-lg font-medium mb-2">
-                        {isPremium ? "Envie a imagem do deck inimigo" : "Upload de imagens (Premium)"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {isPremium ? "PNG, JPG ou WEBP" : "Assine o plano Premium para usar"}
-                      </p>
-                      {!isPremium && (
-                        <Crown className="w-6 h-6 text-gold mt-2" />
-                      )}
-                    </>
-                  )}
-                </div>
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={!isPremium}
-                />
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Ou</span>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
@@ -420,7 +325,7 @@ const Index = () => {
 
               <Button 
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || subscriptionLoading}
+                disabled={isAnalyzing}
                 size="lg"
                 className="w-full bg-gradient-arena hover:shadow-glow transition-all"
               >
@@ -436,28 +341,10 @@ const Index = () => {
                   </>
                 )}
               </Button>
-
-              {!isPremium && (
-                <Button 
-                  onClick={() => setShowPricing(true)}
-                  variant="outline"
-                  size="lg"
-                  className="w-full border-gold/30 hover:border-gold hover:bg-gold/10"
-                >
-                  <Crown className="w-5 h-5 mr-2 text-gold" />
-                  Assinar Premium
-                </Button>
-              )}
             </CardContent>
           </Card>
         </div>
       )}
-
-      <PricingModal
-        open={showPricing}
-        onOpenChange={setShowPricing}
-        onUpgrade={handleUpgrade}
-      />
 
       {/* Auth Modal */}
       <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
@@ -557,9 +444,6 @@ const Index = () => {
             
             <div className="text-center space-y-1">
               <p className="text-sm font-medium">{userEmail}</p>
-              {isPremium && (
-                <Badge className="bg-gradient-gold text-primary-foreground">Premium</Badge>
-              )}
             </div>
             
             <div className="w-full space-y-4">
