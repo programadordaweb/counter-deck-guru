@@ -170,7 +170,7 @@ const Index = () => {
       <div className="max-w-4xl mx-auto mb-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src={crownLogo} alt="Clash IA" className="w-10 h-10" />
+            <img src={crownLogo} alt="Clash IA" className="w-14 h-14" />
             <h2 className="text-2xl font-bold bg-gradient-gold bg-clip-text text-transparent">
               Clash IA
             </h2>
