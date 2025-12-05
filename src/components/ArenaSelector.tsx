@@ -50,38 +50,40 @@ const arenas = [
 
 export const ArenaSelector = ({ selectedArena, onArenaSelect }: ArenaSelectorProps) => {
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 sm:gap-3">
       {arenas.map((arena) => (
-        <Card
+        <div
           key={arena.number}
           onClick={() => onArenaSelect(arena.number.toString())}
           className={`
-            relative cursor-pointer transition-all duration-300 overflow-hidden
-            hover:scale-105 hover:shadow-glow
+            relative cursor-pointer transition-all duration-300 group
+            rounded-lg overflow-hidden
+            hover:scale-110 hover:z-10
             ${selectedArena === arena.number.toString() 
-              ? 'ring-4 ring-gold shadow-gold scale-105' 
-              : 'hover:ring-2 hover:ring-primary/50'
+              ? 'ring-2 ring-accent shadow-gold scale-105 z-10' 
+              : 'hover:ring-1 hover:ring-primary/50'
             }
           `}
         >
-          <div className="relative aspect-square">
+          <div className="relative aspect-square bg-card/50">
             <img 
               src={arena.image} 
               alt={arena.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-              <div className="font-bold text-white text-center text-xs sm:text-sm">
-                Arena {arena.number}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80" />
+            <div className="absolute bottom-0 left-0 right-0 p-1 sm:p-1.5">
+              <div className="font-bold text-foreground text-center text-[10px] sm:text-xs drop-shadow-lg">
+                {arena.number}
               </div>
             </div>
           </div>
           {selectedArena === arena.number.toString() && (
-            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gold flex items-center justify-center animate-pulse">
-              <span className="text-black text-xs font-bold">✓</span>
+            <div className="absolute top-1 right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-accent flex items-center justify-center shadow-lg">
+              <span className="text-accent-foreground text-[8px] sm:text-[10px] font-bold">✓</span>
             </div>
           )}
-        </Card>
+        </div>
       ))}
     </div>
   );
