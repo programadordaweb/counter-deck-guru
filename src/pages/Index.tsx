@@ -55,6 +55,8 @@ const Index = () => {
   const [authPassword, setAuthPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [pendingAvatarPreview, setPendingAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProfile = async (uid: string) => {
@@ -141,9 +143,9 @@ const Index = () => {
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !userId) return;
+    if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       toast.error("Por favor, selecione uma imagem.");
@@ -155,25 +157,29 @@ const Index = () => {
       return;
     }
 
+    setPendingAvatarFile(file);
+    setPendingAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!pendingAvatarFile || !userId) return;
+
     setUploadingAvatar(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = pendingAvatarFile.name.split('.').pop();
       const filePath = `${userId}/avatar.${fileExt}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, pendingAvatarFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -181,14 +187,24 @@ const Index = () => {
 
       if (updateError) throw updateError;
 
-      setAvatarUrl(publicUrl + '?t=' + Date.now()); // Add timestamp to bust cache
-      toast.success("Foto de perfil atualizada!");
+      setAvatarUrl(publicUrl + '?t=' + Date.now());
+      setPendingAvatarFile(null);
+      setPendingAvatarPreview(null);
+      toast.success("Foto de perfil salva!");
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
-      toast.error("Erro ao enviar foto. Tente novamente.");
+      toast.error("Erro ao salvar foto. Tente novamente.");
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  const handleCancelAvatar = () => {
+    if (pendingAvatarPreview) {
+      URL.revokeObjectURL(pendingAvatarPreview);
+    }
+    setPendingAvatarFile(null);
+    setPendingAvatarPreview(null);
   };
 
   const handleAnalyze = async () => {
@@ -523,7 +539,7 @@ const Index = () => {
           <div className="flex flex-col items-center gap-4 py-4">
             <div className="relative group">
               <Avatar className="h-24 w-24 ring-4 ring-primary/20">
-                <AvatarImage src={avatarUrl || `https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
+                <AvatarImage src={pendingAvatarPreview || avatarUrl || `https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
                 <AvatarFallback className="text-2xl">{userEmail?.[0].toUpperCase()}</AvatarFallback>
               </Avatar>
               
@@ -543,34 +559,54 @@ const Index = () => {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleAvatarUpload}
+                onChange={handleAvatarSelect}
                 className="hidden"
               />
             </div>
             
             <div className="text-center space-y-1">
               <p className="text-sm font-medium">{userEmail}</p>
-              <p className="text-xs text-muted-foreground">Clique na foto para alterar</p>
+              <p className="text-xs text-muted-foreground">
+                {pendingAvatarPreview ? "Clique em Salvar para confirmar" : "Clique na foto para alterar"}
+              </p>
             </div>
             
-            <Button 
-              variant="outline" 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="w-full"
-            >
-              {uploadingAvatar ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Alterar foto de perfil
-                </>
-              )}
-            </Button>
+            {pendingAvatarPreview ? (
+              <div className="flex gap-2 w-full">
+                <Button 
+                  variant="outline" 
+                  onClick={handleCancelAvatar}
+                  disabled={uploadingAvatar}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSaveAvatar}
+                  disabled={uploadingAvatar}
+                  className="flex-1 bg-gradient-arena"
+                >
+                  {uploadingAvatar ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar Foto"
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="w-full"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                Alterar foto de perfil
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
