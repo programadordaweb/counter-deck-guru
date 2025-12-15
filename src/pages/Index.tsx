@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Zap, Shield, Target, FileText, Crown, LogOut } from "lucide-react";
+import { Sparkles, Zap, Shield, Target, FileText, Crown, LogOut, Camera, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { CounterDeckResult } from "@/components/CounterDeckResult";
@@ -46,22 +46,48 @@ const Index = () => {
   const [showResult, setShowResult] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchProfile = async (uid: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('user_id', uid)
+      .single();
+    
+    if (data?.avatar_url) {
+      setAvatarUrl(data.avatar_url);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserEmail(user?.email || null);
+      setUserId(user?.id || null);
+      if (user?.id) {
+        fetchProfile(user.id);
+      }
     };
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUserEmail(session?.user?.email || null);
+      setUserId(session?.user?.id || null);
+      if (session?.user?.id) {
+        setTimeout(() => fetchProfile(session.user.id), 0);
+      } else {
+        setAvatarUrl(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -79,7 +105,7 @@ const Index = () => {
 
     try {
       if (authMode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: authEmail,
           password: authPassword,
           options: {
@@ -87,6 +113,14 @@ const Index = () => {
           }
         });
         if (error) throw error;
+        
+        // Check if user already exists (Supabase returns user with identities = [] for existing emails)
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          toast.error("❌ Este email já está cadastrado. Tente fazer login.");
+          setAuthLoading(false);
+          return;
+        }
+        
         toast.success("✅ Conta criada! Verifique seu email para confirmar.");
         setShowAuthModal(false);
       } else {
@@ -104,6 +138,56 @@ const Index = () => {
       toast.error(error.message || "Erro ao autenticar");
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("Por favor, selecione uma imagem.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', userId);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl + '?t=' + Date.now()); // Add timestamp to bust cache
+      toast.success("Foto de perfil atualizada!");
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast.error("Erro ao enviar foto. Tente novamente.");
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -181,7 +265,7 @@ const Index = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
                     <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                      <AvatarImage src={`https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
+                      <AvatarImage src={avatarUrl || `https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {userEmail[0].toUpperCase()}
                       </AvatarFallback>
@@ -191,7 +275,7 @@ const Index = () => {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center gap-3 p-2 border-b">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={`https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
+                      <AvatarImage src={avatarUrl || `https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {userEmail[0].toUpperCase()}
                       </AvatarFallback>
@@ -437,31 +521,56 @@ const Index = () => {
           </DialogHeader>
           
           <div className="flex flex-col items-center gap-4 py-4">
-            <Avatar className="h-24 w-24 ring-4 ring-primary/20">
-              <AvatarImage src={`https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
-              <AvatarFallback className="text-2xl">{userEmail?.[0].toUpperCase()}</AvatarFallback>
-            </Avatar>
+            <div className="relative group">
+              <Avatar className="h-24 w-24 ring-4 ring-primary/20">
+                <AvatarImage src={avatarUrl || `https://www.gravatar.com/avatar/${userEmail}?d=identicon`} />
+                <AvatarFallback className="text-2xl">{userEmail?.[0].toUpperCase()}</AvatarFallback>
+              </Avatar>
+              
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-6 h-6 text-white" />
+                )}
+              </button>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
             
             <div className="text-center space-y-1">
               <p className="text-sm font-medium">{userEmail}</p>
+              <p className="text-xs text-muted-foreground">Clique na foto para alterar</p>
             </div>
             
-            <div className="w-full space-y-4">
-              <div className="text-sm text-muted-foreground text-center">
-                Sua foto de perfil é gerada automaticamente pelo Gravatar.
-                <br />
-                Para alterá-la, crie uma conta em{" "}
-                <a 
-                  href="https://gravatar.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  gravatar.com
-                </a>
-                {" "}usando o email: <strong>{userEmail}</strong>
-              </div>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="w-full"
+            >
+              {uploadingAvatar ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Alterar foto de perfil
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
