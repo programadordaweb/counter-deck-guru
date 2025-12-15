@@ -32,7 +32,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -41,6 +41,12 @@ const Auth = () => {
       });
 
       if (error) throw error;
+
+      // Check if user already exists (Supabase returns user with identities = [] for existing emails)
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        toast.error("❌ Este email já está cadastrado. Tente fazer login.");
+        return;
+      }
 
       toast.success("✅ Conta criada! Verifique seu email para confirmar.");
     } catch (error: any) {
