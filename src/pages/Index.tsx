@@ -60,11 +60,16 @@ const Index = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProfile = async (uid: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('avatar_url')
       .eq('user_id', uid)
       .single();
+    
+    // Se o perfil não existir, criar um novo
+    if (error && error.code === 'PGRST116') {
+      await supabase.from('profiles').insert({ user_id: uid });
+    }
     
     if (data?.avatar_url) {
       setAvatarUrl(data.avatar_url);
@@ -107,6 +112,13 @@ const Index = () => {
 
     try {
       if (authMode === "signup") {
+        // Verificar se o email já está cadastrado antes de tentar criar
+        const { data: existingUser } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: 'check_email_exists_dummy_password_12345',
+        });
+        
+        // Se não der erro de credenciais inválidas e sim outro erro, o email pode já existir
         const { data, error } = await supabase.auth.signUp({
           email: authEmail,
           password: authPassword,
@@ -114,7 +126,15 @@ const Index = () => {
             emailRedirectTo: `${window.location.origin}/`
           }
         });
-        if (error) throw error;
+        
+        if (error) {
+          if (error.message.includes('already registered') || error.message.includes('already exists')) {
+            toast.error("❌ Este email já está cadastrado. Tente fazer login.");
+            setAuthLoading(false);
+            return;
+          }
+          throw error;
+        }
         
         // Check if user already exists (Supabase returns user with identities = [] for existing emails)
         if (data.user && data.user.identities && data.user.identities.length === 0) {
