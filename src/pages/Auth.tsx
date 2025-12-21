@@ -40,11 +40,19 @@ const Auth = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('already registered') || error.message.includes('already exists')) {
+          toast.error("❌ Este email já está cadastrado. Tente fazer login.");
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
 
       // Check if user already exists (Supabase returns user with identities = [] for existing emails)
       if (data.user && data.user.identities && data.user.identities.length === 0) {
         toast.error("❌ Este email já está cadastrado. Tente fazer login.");
+        setLoading(false);
         return;
       }
 
